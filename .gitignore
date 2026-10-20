@@ -1,0 +1,9 @@
+node_modules
+.env
+artifacts
+cache
+typechain-types
+coverage
+HACK_EVENT_GATE.json
+PROJECT_STATE.md
+evidence/private
