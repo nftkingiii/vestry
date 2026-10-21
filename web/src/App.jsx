@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CHAIN, formatPot, loadGrants, mappedSs58, short } from "./chain.js";
+import { grantTitle, milestoneLabel, nameOf } from "./labels.js";
+import { todos, totals } from "./status.js";
 import { useWallet } from "./wallet.js";
 import { CreateGrant, GrantCard } from "./Grants.jsx";
 import { Review } from "./Review.jsx";
@@ -9,21 +11,21 @@ import { Hash } from "./ui.jsx";
 const TABS = [
   { id: "grants", label: "Grants" },
   { id: "review", label: "Review" },
-  { id: "evidence", label: "Evidence" },
+  { id: "proof", label: "Proof" },
 ];
 
 /// Exactly one next step for the wallet, or nothing once it is ready.
-function NextStep({ wallet }) {
+function WalletStep({ wallet }) {
   if (wallet.status === "ready") return null;
   // Built lazily: the unfunded step needs an account, which the other states lack.
   const steps = {
-    none: () => ({ text: "Read-only. Install MetaMask or another EVM wallet to fund, submit or review.", action: null }),
-    disconnected: () => ({ text: "Read-only. Connect a wallet to fund, submit or review.", action: ["Connect wallet", wallet.connect] }),
+    none: () => ({ text: "You're viewing read-only. Install MetaMask or another EVM wallet to fund, submit or review.", action: null }),
+    disconnected: () => ({ text: "You're viewing read-only. Connect a wallet to fund, submit or review.", action: ["Connect wallet", wallet.connect] }),
     "wrong-network": () => ({ text: `Your wallet is on another network. Vestry runs on ${CHAIN.name}.`, action: ["Switch network", wallet.switchNetwork] }),
     unfunded: () => ({
       text: (
         <>
-          This wallet has no tPOT. Send test POT to its native account <Hash value={mappedSs58(wallet.account)} /> from a Portaldot wallet, then refresh.
+          This wallet has no tPOT. Send test POT to its Portaldot account <Hash value={mappedSs58(wallet.account)} />, then refresh.
         </>
       ),
       action: ["Refresh balance", wallet.refresh],
@@ -31,10 +33,10 @@ function NextStep({ wallet }) {
   };
   const step = steps[wallet.status]();
   return (
-    <div className="nextstep" role="status">
-      <span>{step.text}</span>
+    <div className="notice" role="status">
+      <p>{step.text}</p>
       {step.action && (
-        <button className="btn btn-primary" onClick={step.action[1]}>
+        <button className="btn" onClick={step.action[1]}>
           {step.action[0]}
         </button>
       )}
@@ -43,10 +45,34 @@ function NextStep({ wallet }) {
   );
 }
 
+const TODO_TEXT = {
+  review: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} is waiting for your approval.`,
+  submit: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} is waiting for you to submit your work.`,
+  reclaim: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} passed its deadline unpaid. You can take the ${formatPot(t.m.amount)} tPOT back.`,
+};
+
+function NeedsYou({ items, onGo }) {
+  if (!items.length) return null;
+  const first = items[0];
+  return (
+    <div className="needs" role="status">
+      <span className="needs-dot" aria-hidden="true" />
+      <p>
+        <b>{grantTitle(first.grant.id)}</b> · {TODO_TEXT[first.kind](first)}
+        {items.length > 1 && <span className="muted"> And {items.length - 1} more.</span>}
+      </p>
+      <button className="btn btn-you" onClick={() => onGo(first)}>
+        {first.kind === "review" ? "Review" : first.kind === "submit" ? "Submit work" : "Take it back"}
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState(() => {
     try {
-      return localStorage.getItem("vestry.tab") || "grants";
+      const saved = localStorage.getItem("vestry.tab");
+      return TABS.some((t) => t.id === saved) ? saved : "grants";
     } catch {
       return "grants";
     }
@@ -92,15 +118,21 @@ export default function App() {
     tabRefs.current[next]?.focus();
   }
 
-  const pending = data?.grants.reduce((n, g) => n + g.milestones.filter((m) => m.state === "Submitted").length, 0) || 0;
+  function goTo(todo) {
+    select(todo.kind === "review" ? "review" : "grants");
+    setTimeout(() => document.getElementById(`grant-${todo.grant.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+
+  const grants = data?.grants || [];
+  const sum = totals(grants);
+  const mine = wallet.status === "ready" ? todos(grants, wallet.account, nowSec) : [];
+  const reviewCount = grants.reduce((n, g) => n + g.milestones.filter((m) => m.state === "Submitted" && nowSec <= m.deadline).length, 0);
+  const walletName = nameOf(wallet.account);
 
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">
-          <span className="mark" aria-hidden="true">V</span>
-          <span className="wordmark">Vestry</span>
-        </div>
+        <div className="logo">Vestry</div>
         <nav className="tabs" role="tablist" aria-label="Sections">
           {TABS.map((t, i) => (
             <button
@@ -116,62 +148,89 @@ export default function App() {
               onKeyDown={(e) => onTabKey(e, i)}
             >
               {t.label}
-              {t.id === "review" && pending > 0 && <span className="count tabular">{pending}</span>}
+              {t.id === "review" && reviewCount > 0 && <span className="count tabular">{reviewCount}</span>}
             </button>
           ))}
         </nav>
         <div className="wallet">
           {wallet.status === "ready" || wallet.status === "unfunded" ? (
-            <span className="wallet-chip">
-              <span className="mono">{short(wallet.account)}</span>
+            <span className="wallet-chip" title={wallet.account}>
+              {walletName || short(wallet.account)}
               <span className="tabular">{formatPot(wallet.balance)} tPOT</span>
             </span>
           ) : wallet.status === "disconnected" ? (
             <button className="btn" onClick={wallet.connect}>Connect wallet</button>
-          ) : null}
+          ) : (
+            <span className="wallet-chip muted">Read-only</span>
+          )}
         </div>
       </header>
 
-      <NextStep wallet={wallet} />
+      <main id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`}>
+        {tab !== "proof" && (
+          <section className="totals" aria-label="Across all grants">
+            <div className="total total-paid">
+              <b className="tabular">{data ? formatPot(sum.paid) : "–"}</b>
+              <span>tPOT paid to grantees</span>
+            </div>
+            <div className="total total-escrow">
+              <b className="tabular">{data ? formatPot(sum.escrow) : "–"}</b>
+              <span>tPOT waiting in escrow</span>
+            </div>
+            <div className="total total-back">
+              <b className="tabular">{data ? formatPot(sum.returned) : "–"}</b>
+              <span>tPOT returned to funders</span>
+            </div>
+          </section>
+        )}
 
-      <main id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="main">
+        <WalletStep wallet={wallet} />
+        {tab !== "proof" && <NeedsYou items={mine} onGo={goTo} />}
+        {loadError && <p className="error" role="alert">Couldn't read Vestry on {CHAIN.name}: {loadError}</p>}
+
         {tab === "grants" && (
           <>
-            <section className="intro">
-              <h1>Grants that pay when the work ships</h1>
-              <p>
-                Each milestone stays in escrow until reviewers approve it and, if you ask for it, until the grantee's own contract shows real use. Native POT tranches land
-                as Portaldot vesting locks.
-              </p>
+            <div className="section-head">
+              <h2>Grants</h2>
               {wallet.status === "ready" && (
-                <button className="btn btn-primary" onClick={() => setShowCreate((v) => !v)} aria-expanded={showCreate}>
+                <button className="btn" onClick={() => setShowCreate((v) => !v)} aria-expanded={showCreate}>
                   {showCreate ? "Close" : "Fund a grant"}
                 </button>
               )}
-            </section>
+            </div>
             {showCreate && wallet.status === "ready" && <CreateGrant wallet={wallet} onChange={reload} />}
-            {loadError && <p className="error" role="alert">Couldn't read Vestry: {loadError}</p>}
             {!data && !loadError && <p className="muted">Reading the chain…</p>}
-            {data && data.grants.length === 0 && (
+            {data && grants.length === 0 && (
               <div className="empty">
-                <h3>No grants on chain yet</h3>
-                <p className="muted">Vestry is deployed and waiting for its first funded grant. Everything shown here is read live from {CHAIN.name}.</p>
+                <h3>No grants yet</h3>
+                <p className="muted">The first funded grant will appear here, read live from {CHAIN.name}.</p>
               </div>
             )}
             <div className="stack">
-              {data?.grants
+              {grants
                 .slice()
                 .reverse()
-                .map((g) => <GrantCard key={g.id} grant={g} wallet={wallet} nowSec={nowSec} onChange={reload} />)}
+                .map((g) => (
+                  <GrantCard key={g.id} grant={g} wallet={wallet} nowSec={nowSec} head={data.head} onChange={reload} />
+                ))}
             </div>
           </>
         )}
-        {tab === "review" && <Review data={data} wallet={wallet} nowSec={nowSec} onChange={reload} />}
-        {tab === "evidence" && <Evidence head={data?.head} />}
+        {tab === "review" && (
+          <>
+            <div className="section-head">
+              <h2>Waiting for review</h2>
+            </div>
+            <Review data={data} wallet={wallet} nowSec={nowSec} onChange={reload} />
+          </>
+        )}
+        {tab === "proof" && <Evidence head={data?.head} />}
       </main>
 
-      <footer className="footer muted">
-        <span>{CHAIN.name} · chain {CHAIN.id}</span>
+      <footer className="footer">
+        <span>
+          Live on {CHAIN.name} · chain {CHAIN.id}
+        </span>
         <span>Build {__REVISION__}</span>
         <a href="https://github.com/nftkingiii/vestry">Source</a>
       </footer>

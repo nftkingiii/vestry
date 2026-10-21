@@ -141,15 +141,40 @@ function blake2b512(input) {
   return out;
 }
 
-/// Loads every grant with its milestones, reviewers (from GrantCreated) and the
-/// grantee's live vesting lock and activity metric.
+/// Per-milestone history the contract keeps only in events: latest evidence, the last
+/// change request, who approved since the latest submission, and when it was released.
+function historyFromEvents(events) {
+  const byMilestone = new Map();
+  const key = (g, i) => `${g}:${i}`;
+  const get = (g, i) => {
+    if (!byMilestone.has(key(g, i))) byMilestone.set(key(g, i), { evidence: null, changes: null, approvers: [], releasedBlock: null, metricAtRelease: null });
+    return byMilestone.get(key(g, i));
+  };
+  for (const e of events) {
+    if (e.args.index === undefined) continue;
+    const h = get(Number(e.args.grantId), Number(e.args.index));
+    if (e.name === "MilestoneSubmitted") {
+      h.evidence = e.args.evidence;
+      h.approvers = [];
+    } else if (e.name === "ChangesRequested") {
+      h.changes = { reason: e.args.reason, by: e.args.reviewer };
+    } else if (e.name === "MilestoneApproved") {
+      h.approvers.push(e.args.reviewer);
+    } else if (e.name === "MilestoneReleased") {
+      h.releasedBlock = e.block;
+      h.metricAtRelease = Number(e.args.metricValue);
+    }
+  }
+  return (g, i) => byMilestone.get(key(g, i)) || { evidence: null, changes: null, approvers: [], releasedBlock: null, metricAtRelease: null };
+}
+
+/// Loads every grant with its milestones, reviewers (from GrantCreated), event history,
+/// and the grantee's live vesting lock and activity metric.
 export async function loadGrants() {
-  const [count, head, logs] = await Promise.all([
-    vestryRead.grantCount(),
-    readProvider.getBlockNumber(),
-    vestryRead.queryFilter(vestryRead.filters.GrantCreated(), DEPLOY_BLOCK, "latest"),
-  ]);
-  const created = new Map(logs.map((l) => [Number(l.args.grantId), l]));
+  const [count, head, events] = await Promise.all([vestryRead.grantCount(), readProvider.getBlockNumber(), loadActivity()]);
+  const chronological = events.slice().reverse();
+  const created = new Map(chronological.filter((e) => e.name === "GrantCreated").map((e) => [Number(e.args.grantId), e]));
+  const history = historyFromEvents(chronological);
   const grants = [];
   for (let id = 0; id < Number(count); id++) {
     const g = await vestryRead.grants(id);
@@ -172,6 +197,7 @@ export async function loadGrants() {
         metricSelector: m.metricSelector,
         metricMin: Number(m.metricMin),
         metricValue: metricValue === null ? null : Number(metricValue),
+        ...history(id, i),
       });
     }
     const log = created.get(id);
@@ -183,7 +209,8 @@ export async function loadGrants() {
       threshold: Number(g.threshold),
       reviewers: log ? [...log.args.reviewers] : [],
       total: log ? log.args.total : milestones.reduce((s, m) => s + m.amount, 0n),
-      createdTx: log?.transactionHash,
+      createdTx: log?.tx,
+      createdBlock: log?.block,
       vestingLock: await vestingRead.vestingBalanceOf(g.grantee).catch(() => null),
       milestones,
     });
@@ -197,13 +224,14 @@ export async function loadActivity() {
     .map((l) => {
       try {
         const parsed = vestryIface.parseLog(l);
-        return { name: parsed.name, args: parsed.args, tx: l.transactionHash, block: l.blockNumber };
+        return { name: parsed.name, args: parsed.args, tx: l.transactionHash, block: l.blockNumber, logIndex: l.index ?? 0 };
       } catch {
         return null;
       }
     })
     .filter(Boolean)
-    .reverse();
+    // Newest first. The RPC does not guarantee log order within a block, so sort explicitly.
+    .sort((a, b) => b.block - a.block || b.logIndex - a.logIndex);
 }
 
 export function formatPot(wei, digits = 2) {

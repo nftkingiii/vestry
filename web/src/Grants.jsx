@@ -1,58 +1,68 @@
 import { useState } from "react";
 import { ethers } from "ethers";
 import { GUESTBOOK, MIN_VESTED, VESTRY, VESTRY_ABI, WEI_PER_PLANCK, formatPot, short } from "./chain.js";
-import { MilestoneActions, Track } from "./Track.jsx";
-import { Hash, Pill, TxStatus, useTx } from "./ui.jsx";
+import { grantTitle, nameOf } from "./labels.js";
+import { split } from "./status.js";
+import { MilestoneRow } from "./Milestone.jsx";
+import { Hash, TxStatus, useTx } from "./ui.jsx";
 
-export function GrantCard({ grant, wallet, nowSec, onChange }) {
-  const released = grant.milestones.filter((m) => m.state === "Released").reduce((s, m) => s + m.amount, 0n);
-  const me = wallet.account?.toLowerCase();
-  const role = !me
-    ? null
-    : me === grant.funder.toLowerCase()
-      ? "Funder"
-      : me === grant.grantee.toLowerCase()
-        ? "Grantee"
-        : grant.reviewers.some((r) => r.toLowerCase() === me)
-          ? "Reviewer"
-          : null;
+function Party({ address }) {
+  const name = nameOf(address);
   return (
-    <article className="grant">
-      <header className="grant-head">
+    <span className="party">
+      {name || short(address)}
+      {name && <small className="mono">{short(address)}</small>}
+    </span>
+  );
+}
+
+export function GrantCard({ grant, wallet, nowSec, head, onChange }) {
+  const s = split(grant);
+  const pct = (v) => (grant.total > 0n ? Number((v * 10000n) / grant.total) / 100 : 0);
+  return (
+    <article className="grant" id={`grant-${grant.id}`}>
+      <div className="grant-top">
         <div>
-          <h3>Grant {grant.id + 1}</h3>
-          <p className="muted">
-            <span className="mono">{short(grant.funder)}</span> funds <span className="mono">{short(grant.grantee)}</span> · {grant.threshold} of{" "}
-            {grant.reviewers.length || "?"} reviewers
-          </p>
-        </div>
-        <div className="grant-figures">
-          {role && <Pill tone="accent">You are the {role.toLowerCase()}</Pill>}
-          <div className="figure">
-            <span className="figure-value tabular">{formatPot(released)}</span>
-            <span className="figure-label">of {formatPot(grant.total)} tPOT released</span>
+          <h3>{grantTitle(grant.id)}</h3>
+          <div className="who">
+            <span>
+              From <Party address={grant.funder} />
+            </span>
+            <span>
+              to <Party address={grant.grantee} />
+            </span>
           </div>
-          {grant.vestingLock !== null && (
-            <div className="figure">
-              <span className="figure-value tabular">{formatPot(grant.vestingLock * WEI_PER_PLANCK)}</span>
-              <span className="figure-label">tPOT still locked on grantee</span>
-            </div>
-          )}
         </div>
-      </header>
-      <ul className="milestones">
+        <div className="grant-amount tabular">
+          {formatPot(grant.total)} <span>tPOT</span>
+        </div>
+      </div>
+      <div className="bar" role="img" aria-label={`${formatPot(s.paid)} paid, ${formatPot(s.escrow)} in escrow, ${formatPot(s.returned)} returned`}>
+        <i className="bar-paid" style={{ width: `${pct(s.paid)}%` }} />
+        <i className="bar-escrow" style={{ width: `${pct(s.escrow)}%` }} />
+        <i className="bar-back" style={{ width: `${pct(s.returned)}%` }} />
+      </div>
+      <div className="legend tabular">
+        <span><i className="key key-paid" /><b>{formatPot(s.paid)}</b> paid</span>
+        <span><i className="key key-escrow" /><b>{formatPot(s.escrow)}</b> in escrow</span>
+        <span><i className="key key-back" /><b>{formatPot(s.returned)}</b> returned</span>
+        <span className="legend-meta">
+          {grant.reviewers.length === 1 && grant.threshold === 1
+            ? "1 reviewer must approve"
+            : `${grant.threshold} of ${grant.reviewers.length || "?"} reviewers must approve`}
+        </span>
+      </div>
+      <ol className="ms">
         {grant.milestones.map((m) => (
-          <li key={m.index} className="milestone">
-            <div className="milestone-title">
-              <span>Milestone {m.index + 1}</span>
-              <Pill tone={{ Released: "ok", Reclaimed: "neutral", Submitted: "busy", Open: "neutral" }[m.state]}>{m.state}</Pill>
-            </div>
-            <Track grant={grant} m={m} nowSec={nowSec} />
-            <MilestoneActions grant={grant} m={m} wallet={wallet} nowSec={nowSec} onChange={onChange} />
-          </li>
+          <MilestoneRow key={m.index} grant={grant} m={m} wallet={wallet} nowSec={nowSec} head={head} onChange={onChange} />
         ))}
-      </ul>
-      {grant.createdTx && <Hash value={grant.createdTx} label="created" />}
+      </ol>
+      {grant.createdTx && (
+        <div className="grant-foot">
+          <span>Funded in block {grant.createdBlock?.toLocaleString()}</span>
+          <Hash value={grant.createdTx} label="tx" />
+        </div>
+      )}
     </article>
   );
 }
@@ -81,7 +91,7 @@ export function CreateGrant({ wallet, onChange }) {
       const inputs = items.map((m) => {
         const amount = ethers.parseEther(m.amount || "0");
         const vestingBlocks = Number(m.vestingBlocks || 0);
-        if (vestingBlocks > 0 && amount < MIN_VESTED) throw new Error("A vested tranche must be at least 10 tPOT (Portaldot's minimum vested transfer).");
+        if (vestingBlocks > 0 && amount < MIN_VESTED) throw new Error("A tranche paid as a vesting lock must be at least 10 tPOT (Portaldot's minimum).");
         if (amount % WEI_PER_PLANCK !== 0n) throw new Error("Amounts can have at most 14 decimal places.");
         return {
           amount,
@@ -103,11 +113,13 @@ export function CreateGrant({ wallet, onChange }) {
   const total = items.reduce((s, m) => s + Number(m.amount || 0), 0);
   return (
     <form className="create" onSubmit={submit}>
-      <h3>Fund a grant</h3>
-      <p className="muted">
-        You escrow the full amount now. Each milestone pays out only after review, and unpaid milestones come back to you after their deadline. Portaldot also holds a
-        refundable storage deposit for the grant's on-chain record.
-      </p>
+      <div>
+        <h3>Fund a grant</h3>
+        <p className="muted">
+          You put the full amount in escrow now. Each milestone is paid only after review, and anything unpaid comes back to you after its deadline. Portaldot also holds a
+          refundable storage deposit, shown before you confirm.
+        </p>
+      </div>
       <div className="grid-2">
         <label>
           Grantee address
@@ -131,17 +143,17 @@ export function CreateGrant({ wallet, onChange }) {
               <input type="number" min="0" step="any" value={m.amount} onChange={(e) => update(i, { amount: e.target.value })} required />
             </label>
             <label>
-              Deadline in days
+              Due in (days)
               <input type="number" min="0.01" step="any" value={m.days} onChange={(e) => update(i, { days: e.target.value })} required />
             </label>
             <label>
-              Vesting blocks
+              Unlock over (blocks)
               <input type="number" min="0" value={m.vestingBlocks} onChange={(e) => update(i, { vestingBlocks: e.target.value })} />
             </label>
           </div>
           <label className="check">
             <input type="checkbox" checked={m.metric} onChange={(e) => update(i, { metric: e.target.checked })} />
-            Require on-chain activity before payout
+            Only pay once the grantee's contract shows real use
           </label>
           {m.metric && (
             <div className="grid-3">
@@ -150,7 +162,7 @@ export function CreateGrant({ wallet, onChange }) {
                 <input value={m.target} onChange={(e) => update(i, { target: e.target.value })} required />
               </label>
               <label>
-                View function
+                Counter function
                 <input value={m.fn} onChange={(e) => update(i, { fn: e.target.value })} required />
               </label>
               <label>
@@ -171,7 +183,7 @@ export function CreateGrant({ wallet, onChange }) {
           Add milestone
         </button>
         <button className="btn btn-primary" disabled={busy || wallet.status !== "ready"}>
-          Escrow {total.toLocaleString()} tPOT
+          Put {total.toLocaleString()} tPOT in escrow
         </button>
       </div>
       {formError && <p className="error" role="alert">{formError}</p>}

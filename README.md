@@ -88,7 +88,7 @@ npm install
 npm run dev                      # or: npm run build && npm start (serves dist and /health)
 ```
 
-Tabs: **Grants** (fund a grant, follow each milestone's release track), **Review** (submissions waiting on your approval) and **Evidence** (deployments, live chain state, contract activity). Without a wallet the app is read-only and says so.
+Tabs: **Grants** (where every grant's money is: paid, in escrow or returned, with a plain status for each milestone), **Review** (work waiting on your approval) and **Proof** (deployments, live chain state and the full event history). Without a wallet the app is read-only and says so. Grant, milestone and people names come from `web/src/labels.js`; the contract stores only addresses and amounts.
 
 `scripts/deploy.js` deploys the contracts; the deployer's mapped native account needs about 500 tPOT because of Portaldot's storage deposits. Get its `5…` address from `node scripts/readback.mjs <deployer 0x address>`.
 

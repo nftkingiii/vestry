@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import { CHAIN, DEPLOYMENTS, VESTING_PRECOMPILE, guestbookRead, loadActivity, readProvider, vestryRead } from "./chain.js";
 import { Hash, Pill } from "./ui.jsx";
+import { grantTitle, milestoneLabel } from "./labels.js";
 
+const g = (a) => grantTitle(Number(a.grantId));
+const ms = (a) => `${g(a)} · ${milestoneLabel(Number(a.grantId), Number(a.index)).title}`;
 const EVENT_TEXT = {
-  GrantCreated: (a) => `Grant ${Number(a.grantId) + 1} funded`,
-  MilestoneSubmitted: (a) => `Grant ${Number(a.grantId) + 1}, milestone ${Number(a.index) + 1}: evidence submitted`,
-  MilestoneApproved: (a) => `Grant ${Number(a.grantId) + 1}, milestone ${Number(a.index) + 1}: approval ${a.approvals}`,
-  ChangesRequested: (a) => `Grant ${Number(a.grantId) + 1}, milestone ${Number(a.index) + 1}: changes requested`,
-  AwaitingMetric: (a) => `Grant ${Number(a.grantId) + 1}, milestone ${Number(a.index) + 1}: quorum reached, activity below target`,
-  MilestoneReleased: (a) => `Grant ${Number(a.grantId) + 1}, milestone ${Number(a.index) + 1}: released${Number(a.vestingBlocks) ? " as vesting lock" : ""}`,
-  MilestoneReclaimed: (a) => `Grant ${Number(a.grantId) + 1}, milestone ${Number(a.index) + 1}: returned to funder`,
+  GrantCreated: (a) => `${g(a)} funded`,
+  MilestoneSubmitted: (a) => `${ms(a)}: work submitted`,
+  MilestoneApproved: (a) => `${ms(a)}: approval ${a.approvals}`,
+  ChangesRequested: (a) => `${ms(a)}: changes requested`,
+  AwaitingMetric: (a) => `${ms(a)}: approved, held until usage target`,
+  MilestoneReleased: (a) => `${ms(a)}: paid${Number(a.vestingBlocks) ? " as a vesting lock" : ""}`,
+  MilestoneReclaimed: (a) => `${ms(a)}: returned to funder`,
 };
 
 export function Evidence({ head }) {
@@ -105,6 +108,7 @@ export function Evidence({ head }) {
           <li>The vesting precompile answers at <span className="mono">0x…09020000</span>. The constant in upstream <span className="mono">IVesting.sol</span> (<span className="mono">0x…0902</span>) returns empty data on this testnet.</li>
           <li>Storage deposits are 0.06 tPOT per byte and 0.15 tPOT per item, so a 5 KB contract holds about 430 tPOT. Vestry packs each milestone into two storage slots and keeps evidence text in events.</li>
           <li>Vested tranches must be at least 10 tPOT, Portaldot's minimum vested transfer.</li>
+          <li>Grant, milestone and people names are labels kept by this app. The contract stores only addresses and amounts.</li>
         </ul>
       </section>
     </div>
