@@ -88,14 +88,11 @@ async function main() {
     }
   }
 
-  const guestbook = await (await ethers.getContractFactory("Guestbook", deployer)).deploy();
-  await guestbook.waitForDeployment();
-  const vestry = await (await ethers.getContractFactory("Vestry", deployer)).deploy();
-  await vestry.waitForDeployment();
-  evidence.contracts = {
-    Vestry: { address: await vestry.getAddress(), deployTx: vestry.deploymentTransaction().hash },
-    Guestbook: { address: await guestbook.getAddress(), deployTx: guestbook.deploymentTransaction().hash },
-  };
+  // Reuse the contracts from scripts/deploy.js: each fresh deploy holds ~470 tPOT of storage deposit.
+  const deployed = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "evidence", "deployments.json"), "utf8")).contracts;
+  const vestry = await ethers.getContractAt("Vestry", deployed.Vestry.address, deployer);
+  const guestbook = await ethers.getContractAt("Guestbook", deployed.Guestbook.address, deployer);
+  evidence.contracts = { Vestry: deployed.Vestry, Guestbook: deployed.Guestbook };
   console.log("Vestry", evidence.contracts.Vestry.address, "Guestbook", evidence.contracts.Guestbook.address);
   save();
 

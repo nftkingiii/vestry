@@ -80,7 +80,17 @@ npx hardhat run scripts/flow.js --network portaldot
 node scripts/readback.mjs <grantee 0x address>
 ```
 
-The deployer's mapped native account needs about 50 tPOT. Get its `5…` address from `node scripts/readback.mjs <deployer 0x address>`.
+Web app (reads the deployed contracts straight from the RPC; wallet actions through MetaMask):
+
+```bash
+cd web
+npm install
+npm run dev                      # or: npm run build && npm start (serves dist and /health)
+```
+
+Tabs: **Grants** (fund a grant, follow each milestone's release track), **Review** (submissions waiting on your approval) and **Evidence** (deployments, live chain state, contract activity). Without a wallet the app is read-only and says so.
+
+`scripts/deploy.js` deploys the contracts; the deployer's mapped native account needs about 500 tPOT because of Portaldot's storage deposits. Get its `5…` address from `node scripts/readback.mjs <deployer 0x address>`.
 
 ## Tests
 
@@ -90,7 +100,8 @@ The deployer's mapped native account needs about 50 tPOT. Get its `5…` address
 
 | Done | Next |
 |---|---|
-| Contract, tests, testnet lifecycle script, native read-back | Web app for funders, grantees and reviewers |
+| Contract, tests, testnet deployment, native read-back | Full grant lifecycle on testnet (needs more tPOT for storage deposits) |
+| Web app: Grants, Review, Evidence tabs reading live chain state | Public deployment of the web app |
 | | Asset-denominated grant on testnet |
 | | Reviewer sets backed by Portaldot multisig and on-chain identity |
 

@@ -7,3 +7,5 @@ coverage
 HACK_EVENT_GATE.json
 PROJECT_STATE.md
 evidence/private
+web/node_modules
+web/dist
