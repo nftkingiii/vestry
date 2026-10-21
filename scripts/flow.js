@@ -8,7 +8,6 @@ const { ethers, network } = require("hardhat");
 const RPC = network.config.url;
 const EVIDENCE = path.join(__dirname, "..", "evidence", "testnet.json");
 const TEN_POT = ethers.parseUnits("10", 18);
-const ACTOR_FUNDING = ethers.parseUnits("1", 18);
 const VESTING_BLOCKS = 1000; // ~100 minutes at 6s blocks
 const NO_METRIC = { metricTarget: ethers.ZeroAddress, metricSelector: "0x00000000", metricMin: 0 };
 
@@ -82,9 +81,14 @@ async function main() {
     actors: Object.fromEntries(Object.entries(actors).map(([k, w]) => [k.toLowerCase(), w.address])),
   };
 
-  for (const w of Object.values(actors)) {
-    if ((await ethers.provider.getBalance(w.address)) < ACTOR_FUNDING / 2n) {
-      await step(`fund ${w.address} for gas`, deployer.sendTransaction({ to: w.address, value: ACTOR_FUNDING }));
+  // Every new storage slot holds a deposit from the sender, so actors are topped up to what
+  // their role writes: two approvals per reviewer, one Guestbook entry per visitor.
+  const targets = { GRANTEE: 3, REVIEWER_1: 15, REVIEWER_2: 15, VISITOR_1: 10, VISITOR_2: 10 };
+  for (const [name, w] of Object.entries(actors)) {
+    const want = ethers.parseEther(String(targets[name]));
+    const have = await ethers.provider.getBalance(w.address);
+    if (have < want) {
+      await step(`top up ${name.toLowerCase()} ${w.address} to ${targets[name]} tPOT for gas and storage deposit`, deployer.sendTransaction({ to: w.address, value: want - have }));
     }
   }
 
