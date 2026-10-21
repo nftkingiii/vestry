@@ -116,6 +116,8 @@ Both paid milestones landed as `pallet-vesting` schedules on the grantee's nativ
 
 A 1:52 walkthrough of the live app and this testnet evidence was produced for the Week 2 check-in. The link is on the DoraHacks build page.
 
+Pitch deck (PDF): [docs/vestry-deck.pdf](docs/vestry-deck.pdf)
+
 ## Run it
 
 Requirements: Node 20+.
