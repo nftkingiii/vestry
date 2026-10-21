@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Vestry">
+  <defs>
+    <!-- Right stroke of the V: a track that is only partly unlocked, like a vesting bar. -->
+    <clipPath id="unlocked">
+      <rect x="0" y="262" width="512" height="250" />
+    </clipPath>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#191814" />
+  <g fill="none" stroke-linecap="round" stroke-width="64">
+    <line x1="374" y1="138" x2="256" y2="374" stroke="#3a3830" />
+    <line x1="374" y1="138" x2="256" y2="374" stroke="#3fb37d" clip-path="url(#unlocked)" />
+    <line x1="138" y1="138" x2="256" y2="374" stroke="#3fb37d" />
+  </g>
+</svg>
