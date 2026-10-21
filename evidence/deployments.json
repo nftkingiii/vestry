@@ -1,0 +1,27 @@
+{
+  "network": "PortaldotV3 testnet",
+  "chainId": 420420777,
+  "contracts": {
+    "Vestry": {
+      "address": "0x12d0691c7B756AA5205f24B678D68C74B885cda9",
+      "deployTx": "0xc7c38b8fcfdf204fe825ea2437e9767b3d462c291f605e8b4103f18955cd118d",
+      "block": 128768,
+      "status": "success",
+      "runtimeBytes": 5253,
+      "gasUsed": "11684341575314624",
+      "tPotSpent": "423.38211698152540064",
+      "deployedAt": "2026-10-21T07:42:43.646Z"
+    },
+    "Guestbook": {
+      "address": "0xc3Ee4B657FADAE473b22c692544e35223bFE9B42",
+      "deployTx": "0xc501d932533ecb7c5b25c854e287f0b495d80ece0d0a6fa3c85741c555931367",
+      "block": 128769,
+      "status": "success",
+      "runtimeBytes": 470,
+      "gasUsed": "1375184655915029",
+      "tPotSpent": "49.829816007081075815",
+      "deployedAt": "2026-10-21T07:42:52.856Z"
+    }
+  },
+  "deployer": "0x13f3B0c9C83ffdba37Fe0B3Efa41e625651e9ddb"
+}
