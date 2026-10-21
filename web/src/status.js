@@ -33,7 +33,7 @@ export function totals(grants) {
   );
 }
 
-/// How much of a released vesting tranche has unlocked, from the release block.
+/// How much of a released vesting tranche has vested, from the release block.
 export function unlock(m, head) {
   if (m.state !== "Released" || !m.vestingBlocks || m.releasedBlock === null || !head) return null;
   const done = Math.min(m.vestingBlocks, Math.max(0, head - m.releasedBlock));

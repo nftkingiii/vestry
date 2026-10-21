@@ -26,11 +26,12 @@ export function MilestoneRow({ grant, m, wallet, nowSec, head, onChange }) {
         </div>
         {u && (
           <div className="unlock">
-            <div className="unlock-track" role="progressbar" aria-valuenow={u.pct} aria-valuemin="0" aria-valuemax="100" aria-label="Unlocked share of this tranche">
+            <div className="unlock-track" role="progressbar" aria-valuenow={u.pct} aria-valuemin="0" aria-valuemax="100" aria-label="Vested share of this tranche">
               <i style={{ width: `${u.pct}%` }} />
             </div>
+            {/* pallet-vesting keeps the lock until the grantee calls vest(), so this is vested, not yet withdrawn. */}
             <span>
-              {u.pct}% unlocked{u.pct < 100 ? ` · the rest over ~${duration(u.remainingSeconds)}` : ""}
+              {u.pct < 100 ? `${u.pct}% vested · the rest over ~${duration(u.remainingSeconds)}` : "Fully vested · the grantee claims it with vest()"}
             </span>
           </div>
         )}

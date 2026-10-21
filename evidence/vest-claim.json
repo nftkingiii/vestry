@@ -1,0 +1,15 @@
+{
+  "action": "grantee calls vest() on the vesting precompile",
+  "tx": "0x4147764f9e1d87ba944c9c2ef7abb67359106d58401118a4d1aeb416d006f946",
+  "block": 135631,
+  "status": 1,
+  "before": {
+    "frozen": "1992000000000000",
+    "schedules": 2
+  },
+  "after": {
+    "frozen": "0",
+    "schedules": 0,
+    "block": 135631
+  }
+}
