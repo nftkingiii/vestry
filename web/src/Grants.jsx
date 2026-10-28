@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { GUESTBOOK, MIN_VESTED, VESTRY, VESTRY_ABI, WEI_PER_PLANCK, formatPot, short } from "./chain.js";
+import { GUESTBOOK, MIN_VESTED, VESTING_ABI, VESTING_PRECOMPILE, VESTRY, VESTRY_ABI, WEI_PER_PLANCK, formatPot, short } from "./chain.js";
 import { grantTitle, nameOf } from "./labels.js";
 import { split } from "./status.js";
 import { MilestoneRow } from "./Milestone.jsx";
@@ -57,6 +57,7 @@ export function GrantCard({ grant, wallet, nowSec, head, onChange }) {
           <MilestoneRow key={m.index} grant={grant} m={m} wallet={wallet} nowSec={nowSec} head={head} onChange={onChange} />
         ))}
       </ol>
+      <ClaimVested grant={grant} wallet={wallet} onChange={onChange} />
       {grant.createdTx && (
         <div className="grant-foot">
           <span>Funded in block {grant.createdBlock?.toLocaleString()}</span>
@@ -64,6 +65,31 @@ export function GrantCard({ grant, wallet, nowSec, head, onChange }) {
         </div>
       )}
     </article>
+  );
+}
+
+/// pallet-vesting keeps vested tPOT locked until the owner calls vest(); the grantee does that here
+/// through Portaldot's vesting precompile, from their own wallet.
+function ClaimVested({ grant, wallet, onChange }) {
+  const tx = useTx(onChange);
+  const isGrantee = wallet.account?.toLowerCase() === grant.grantee.toLowerCase();
+  const hasLock = grant.milestones.some((m) => m.state === "Released" && m.vestingBlocks > 0);
+  if (wallet.status !== "ready" || !isGrantee || !hasLock) return null;
+  const busy = ["estimating", "wallet", "pending"].includes(tx.state.phase);
+  return (
+    <div className="claim">
+      <p>
+        Your paid tranches are native Portaldot vesting locks. Claim what has vested so far to unlock it in your account.
+      </p>
+      <button
+        className="btn btn-primary"
+        disabled={busy}
+        onClick={() => tx.run(async () => ({ contract: new ethers.Contract(VESTING_PRECOMPILE, VESTING_ABI, await wallet.signer()), method: "vest" }))}
+      >
+        Claim vested tPOT
+      </button>
+      <TxStatus state={tx.state} />
+    </div>
   );
 }
 

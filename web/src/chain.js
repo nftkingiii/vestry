@@ -52,7 +52,7 @@ export const VESTRY_ABI = [
   "error PayoutFailed()",
 ];
 
-const VESTING_ABI = ["function vestingBalanceOf(address target) view returns (uint256)"];
+export const VESTING_ABI = ["function vestingBalanceOf(address target) view returns (uint256)", "function vest()"];
 const GUESTBOOK_ABI = ["function entryCount() view returns (uint256)", "function sign(string note)", "function signed(address) view returns (bool)"];
 
 export const STATES = ["Open", "Submitted", "Released", "Reclaimed"];
@@ -268,6 +268,9 @@ export function explainError(e) {
     }
   }
   if (e?.code === "ACTION_REJECTED" || e?.code === 4001) return "You rejected the request in your wallet.";
+  if (!data && /execution reverted|CALL_EXCEPTION/i.test(e?.message || e?.code || "")) {
+    return "The chain refused this call. For a claim, that usually means nothing new has vested yet or it was already claimed.";
+  }
   if (/insufficient funds|Invalid Transaction/i.test(e?.message || "")) {
     return "Not enough tPOT for this transaction plus Portaldot's storage deposit.";
   }

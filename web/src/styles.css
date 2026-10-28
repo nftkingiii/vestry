@@ -180,3 +180,5 @@ main > .stack:first-child { margin-top: 28px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+.claim { display: grid; gap: 10px; margin-top: 14px; padding: 14px 16px; border-radius: 12px; background: var(--paid-2); color: var(--paid); }
+.claim .btn { justify-self: start; }
