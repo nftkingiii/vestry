@@ -9,3 +9,5 @@ PROJECT_STATE.md
 evidence/private
 web/node_modules
 web/dist
+e2e/node_modules
+e2e/out
