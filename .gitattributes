@@ -1,0 +1,3 @@
+# Solidity sources stay LF on every OS: the compiler hashes the exact bytes into contract metadata,
+# so CRLF checkouts would rebuild a different metadata hash than the deployed contracts.
+*.sol text eol=lf
