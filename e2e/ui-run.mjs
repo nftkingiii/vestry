@@ -66,25 +66,69 @@ async function open(p) {
   await p.page.waitForSelector(".grant", { timeout: 60000 });
 }
 
+/// Confirms a click from the chain (the receipt of the tx the wallet just sent), then checks the app said so too.
 async function waitConfirmed(p, label) {
-  const status = p.page.locator(".txstatus").last();
-  await status.waitFor({ timeout: 60000 });
-  await p.page.waitForFunction(() => { const s = [...document.querySelectorAll(".txstatus")].pop(); return s && /Confirmed on chain|refused|rejected|wrong|Not enough/i.test(s.innerText); }, null, { timeout: 180000 });
-  const txt = await status.innerText();
-  if (!/Confirmed on chain/.test(txt)) throw new Error(`${label}: ${txt}`);
-  await p.page.screenshot({ path: join(OUT, `${String(steps.length).padStart(2, "0")}-${p.role}-${label.replace(/\W+/g, "-")}.png`), fullPage: false });
-  record(p.role, `${label}: confirmed in the app`);
+  const sent = steps.filter((s) => s.role === p.role && s.hash).pop();
+  if (!sent) throw new Error(`${label}: the wallet never sent a transaction`);
+  const receipt = await provider.waitForTransaction(sent.hash, 1, 240000);
+  if (!receipt || receipt.status !== 1) throw new Error(`${label}: tx ${sent.hash} failed on chain`);
+  const ui = await p.page
+    .waitForFunction(() => { const s = [...document.querySelectorAll(".txstatus")].pop(); return s && /Confirmed on chain/.test(s.innerText); }, null, { timeout: 60000 })
+    .then(() => "app showed Confirmed on chain", () => "app did not show confirmation in time");
+  await p.page.screenshot({ path: join(OUT, `${String(steps.length).padStart(2, "0")}-${p.role}-${label.replace(/\W+/g, "-")}.png`) }).catch(() => {});
+  record(p.role, `${label}: confirmed on chain in block ${receipt.blockNumber}; ${ui}`, { block: receipt.blockNumber });
 }
 
-const browser = await chromium.launch();
-const funder = await person(browser, "funder", env.DEPLOYER_KEY);
-const grantee = await person(browser, "grantee", env.GRANTEE_KEY);
-const reviewer = await person(browser, "reviewer", env.REVIEWER_1_KEY);
-const vestryRead = new ethers.Contract("0x12d0691c7B756AA5205f24B678D68C74B885cda9", ["function grantCount() view returns (uint256)"], provider);
-const grantId = Number(await vestryRead.grantCount());
-record("system", `next grant id ${grantId}; funder ${funder.wallet.address}`);
+// One browser per role, so a problem in one cannot close the others' pages.
+async function launchPerson(role, key) {
+  const browser = await chromium.launch();
+  const p = await person(browser, role, key);
+  p.browser = browser;
+  p.page.on("close", () => console.log(`${role}: page closed`));
+  p.page.on("crash", () => console.log(`${role}: page CRASHED`));
+  p.page.on("pageerror", (e) => console.log(`${role}: page error: ${e.message}`));
+  return p;
+}
+
+const resumeArg = process.argv.find((a) => a.startsWith("--grant="));
+const vestryRead = new ethers.Contract("0x12d0691c7B756AA5205f24B678D68C74B885cda9", [
+  "function grantCount() view returns (uint256)",
+  "function getMilestone(uint256,uint256) view returns (tuple(uint128 amount,uint64 deadline,uint32 vestingBlocks,uint8 approvals,uint8 round,uint8 state,address metricTarget,bytes4 metricSelector,uint64 metricMin))",
+], provider);
+const grantId = resumeArg ? Number(resumeArg.slice(8)) : Number(await vestryRead.grantCount());
+const prior = resumeArg && existsSync(join(ROOT, "evidence", "ui-run.json")) ? JSON.parse(readFileSync(join(ROOT, "evidence", "ui-run.json"), "utf8")) : null;
+if (prior && prior.grantId === grantId) steps.push(...prior.steps.filter((s) => !/^FAILED/.test(s.label)));
+const stateNow = resumeArg ? Number((await vestryRead.getMilestone(grantId, 0)).state) : -1; // 0 Open, 1 Submitted, 2 Released
+const funder = await launchPerson("funder", env.DEPLOYER_KEY);
+const grantee = await launchPerson("grantee", env.GRANTEE_KEY);
+const reviewer = await launchPerson("reviewer", env.REVIEWER_1_KEY);
+record("system", resumeArg ? `resuming grant ${grantId} at on-chain state ${stateNow}` : `next grant id ${grantId}; funder ${funder.wallet.address}`);
 
 try {
+  if (resumeArg) {
+    // Confirm any UI-sent transaction from the earlier run that never got its confirmation line.
+    for (const s of steps.filter((x) => x.hash && !steps.some((y) => y.role === x.role && y.block && y.at > x.at))) {
+      const r = await provider.getTransactionReceipt(s.hash);
+      if (r) record(s.role, `earlier UI tx ${s.hash.slice(0, 10)}… confirmed on chain in block ${r.blockNumber}, status ${r.status}`, { block: r.blockNumber });
+    }
+    // Resume: only the steps the chain says are still to do.
+    if (stateNow < 2) {
+      await open(reviewer);
+      await reviewer.page.getByRole("tab", { name: /Review/ }).click();
+      const rc = reviewer.page.locator(`#grant-${grantId}`);
+      await rc.waitFor({ timeout: 60000 });
+      await rc.getByRole("button", { name: "Approve" }).click();
+      await waitConfirmed(reviewer, "approved and paid");
+      await grantee.page.waitForTimeout(36000);
+    }
+    await open(grantee);
+    await grantee.page.locator(`#grant-${grantId}`).getByRole("button", { name: "Claim vested tPOT" }).click();
+    await waitConfirmed(grantee, "vested tPOT claimed");
+    await open(funder);
+    await funder.page.locator(`#grant-${grantId}`).screenshot({ path: join(OUT, "final-card.png") });
+    record("system", "final card captured");
+    throw "done";
+  }
   // 0. Setup, outside the UI: make sure the reviewer can cover the storage deposit of a first approval.
   const reviewerBal = await provider.getBalance(reviewer.wallet.address);
   const want = ethers.parseEther("14");
@@ -136,12 +180,13 @@ try {
   await funder.page.locator(`#grant-${grantId}`).screenshot({ path: join(OUT, "final-card.png") });
   record("system", "final card captured");
 } catch (e) {
-  record("system", `FAILED: ${e.message}`);
-  for (const p of [funder, grantee, reviewer]) await p.page.screenshot({ path: join(OUT, `failure-${p.role}.png`) }).catch(() => {});
-  process.exitCode = 1;
+  if (e !== "done") {
+    record("system", `FAILED: ${e.message}`);
+    for (const p of [funder, grantee, reviewer]) await p.page.screenshot({ path: join(OUT, `failure-${p.role}.png`) }).catch(() => {});
+    process.exitCode = 1;
+  }
 } finally {
-  for (const p of [funder, grantee, reviewer]) await p.ctx.close();
-  await browser.close();
+  for (const p of [funder, grantee, reviewer]) { await p.ctx.close().catch(() => {}); await p.browser.close().catch(() => {}); }
   const outFile = join(ROOT, "evidence", "ui-run.json");
   writeFileSync(outFile, JSON.stringify({
     what: "One grant driven entirely through the live web app in Chromium. Each role used an injected EIP-1193 test wallet (not MetaMask) holding a PortaldotV3 testnet burner key; every transaction below was triggered by a UI click.",
