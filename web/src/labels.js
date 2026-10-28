@@ -14,6 +14,10 @@ export const GRANT_LABELS = {
     title: "Pilot grant",
     milestones: [{ title: "Pilot launch" }],
   },
+  2: {
+    title: "Live UI grant",
+    milestones: [{ title: "Ship with two real users", metric: "people signed the Guestbook" }],
+  },
 };
 
 export const ADDRESS_LABELS = {
