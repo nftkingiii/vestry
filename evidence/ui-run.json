@@ -1,0 +1,98 @@
+{
+  "what": "One grant driven entirely through the live web app in Chromium. Each role used an injected EIP-1193 test wallet (not MetaMask) holding a PortaldotV3 testnet burner key; every transaction below was triggered by a UI click.",
+  "app": "https://vestry-grants.vercel.app",
+  "network": "PortaldotV3 testnet",
+  "chainId": 420420777,
+  "grantId": 2,
+  "steps": [
+    {
+      "role": "system",
+      "label": "next grant id 2; funder 0x13f3B0c9C83ffdba37Fe0B3Efa41e625651e9ddb",
+      "at": "2026-10-28T12:07:38.976Z"
+    },
+    {
+      "role": "setup",
+      "label": "topped up reviewer to 14 tPOT (script, not UI)",
+      "at": "2026-10-28T12:07:46.627Z",
+      "hash": "0x7d15d108812a0053bea5c0d7aee415f7e3e475e686ac5e1faa4abce556ea2059"
+    },
+    {
+      "role": "funder",
+      "label": "wallet signed and sent",
+      "at": "2026-10-28T12:07:55.956Z",
+      "hash": "0x19e8c2ab4b8261905d28545dcf9b7e307cc73c3426007eb42240ebde2a1b53ae"
+    },
+    {
+      "role": "funder",
+      "label": "grant funded: confirmed in the app",
+      "at": "2026-10-28T12:08:02.656Z"
+    },
+    {
+      "role": "grantee",
+      "label": "wallet signed and sent",
+      "at": "2026-10-28T12:08:10.836Z",
+      "hash": "0x14e7a49fe86660b1744878a4a90f86ef9109c6b6241ee918f0dc8200ef60cf08"
+    },
+    {
+      "role": "system",
+      "label": "resuming grant 2 at on-chain state 1",
+      "at": "2026-10-28T12:40:41.953Z"
+    },
+    {
+      "role": "setup",
+      "label": "earlier setup tx (script transfer, not a UI click) 0x7d15d108\u2026 confirmed on chain in block 231733, status 1",
+      "at": "2026-10-28T12:40:42.211Z",
+      "block": 231733
+    },
+    {
+      "role": "funder",
+      "label": "earlier UI tx 0x19e8c2ab\u2026 confirmed on chain in block 231736, status 1",
+      "at": "2026-10-28T12:40:42.466Z",
+      "block": 231736
+    },
+    {
+      "role": "grantee",
+      "label": "earlier UI tx 0x14e7a49f\u2026 confirmed on chain in block 231738, status 1",
+      "at": "2026-10-28T12:40:42.718Z",
+      "block": 231738
+    },
+    {
+      "role": "reviewer",
+      "label": "wallet signed and sent (Approve clicked on the Review tab; hash logged by the wallet after the earlier run had written this file, recovered from e2e/out-run2.log)",
+      "hash": "0x8ef8e577e1b527d22870ca59637d0da0025f883785b02ff4584366ab13116dd1",
+      "at": "2026-10-28T12:45:00Z"
+    },
+    {
+      "role": "system",
+      "label": "resuming grant 2 at on-chain state 2",
+      "at": "2026-10-28T18:10:14.948Z"
+    },
+    {
+      "role": "reviewer",
+      "label": "earlier UI tx 0x8ef8e577\u2026 confirmed on chain in block 232065, status 1",
+      "at": "2026-10-28T18:10:15.219Z",
+      "block": 232065
+    },
+    {
+      "role": "grantee",
+      "label": "wallet signed and sent",
+      "at": "2026-10-28T18:10:25.249Z",
+      "hash": "0x79b07af19204b5d60ff15f96b43b94a58206ac5b8b726778ba49b3eb94b9847a"
+    },
+    {
+      "role": "system",
+      "label": "The claim tx above was sent from the Claim vested tPOT button but never included: PortaldotV3 testnet stopped producing blocks at #232115 (2026-10-28 12:45:54 UTC) and the node dropped it. To be retried with node e2e/ui-run.mjs --grant=2 once the chain resumes.",
+      "at": "2026-10-28T18:20:00Z"
+    }
+  ],
+  "result": {
+    "funded_from_ui": "0x19e8c2ab4b8261905d28545dcf9b7e307cc73c3426007eb42240ebde2a1b53ae (block 231736)",
+    "submitted_from_ui": "0x14e7a49fe86660b1744878a4a90f86ef9109c6b6241ee918f0dc8200ef60cf08 (block 231738)",
+    "approved_and_paid_from_ui": "0x8ef8e577e1b527d22870ca59637d0da0025f883785b02ff4584366ab13116dd1 (block 232065, milestone Released, 10 tPOT native vesting lock from block 232065)",
+    "claim": "sent from UI, not included (testnet halted)",
+    "screenshots": [
+      "evidence/ui-run/1-funder-grant-funded.png",
+      "evidence/ui-run/2-grantee-paid-and-claiming.png"
+    ]
+  }
+}

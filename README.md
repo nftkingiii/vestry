@@ -1,6 +1,6 @@
 # Vestry
 
-Milestone grants on Portaldot that pay out only when the work is reviewed and, if the funder asks for it, when the grantee's own contract shows real usage. Native POT tranches land as native vesting locks, not contract balances.
+**Usage-vested payouts on Portaldot.** Vestry pays money out only when a reviewer quorum approves the work **and** the funded project's own contract shows the agreed usage, and it pays as a native Portaldot vesting lock, not a contract balance. Grants are the first use; incentive programs that reward real dApp activity are next ([docs/BUSINESS.md](docs/BUSINESS.md)).
 
 Built for Portaldot Hacker House 2026 (Ecosystem DApps track).
 
@@ -112,6 +112,19 @@ Both paid milestones landed as `pallet-vesting` schedules on the grantee's nativ
 | `vest()` tx | `0x4147764f9e1d87ba944c9c2ef7abb67359106d58401118a4d1aeb416d006f946` (block 135631, status 1) |
 | After | 0 tPOT frozen, no vesting schedules |
 
+### A grant driven through the live app
+
+On 2026-10-28 `e2e/ui-run.mjs` opened https://vestry-grants.vercel.app in Chromium as funder, grantee and reviewer. MetaMask cannot run headless, so each browser had an injected EIP-1193 test wallet holding a testnet burner key; every transaction below was triggered by clicking the app's own buttons ([evidence/ui-run.json](evidence/ui-run.json)).
+
+| Click in the app | Tx | Block |
+|---|---|---|
+| Funder: **Put 10 tPOT in escrow** (usage gate: 2 Guestbook users) | `0x19e8c2ab4b8261905d28545dcf9b7e307cc73c3426007eb42240ebde2a1b53ae` | 231736 |
+| Grantee: **Submit work** | `0x14e7a49fe86660b1744878a4a90f86ef9109c6b6241ee918f0dc8200ef60cf08` | 231738 |
+| Reviewer: **Approve** on the Review tab; usage gate read, paid as a vesting lock | `0x8ef8e577e1b527d22870ca59637d0da0025f883785b02ff4584366ab13116dd1` | 232065 |
+| Grantee: **Claim vested tPOT** | sent, not included: the testnet stopped producing blocks at #232115 (12:45 UTC); to retry when it resumes | – |
+
+![The grantee's view: Live UI grant paid, vesting, claim in progress](evidence/ui-run/2-grantee-paid-and-claiming.png)
+
 ## Demo
 
 A 1:52 walkthrough of the live app and this testnet evidence was produced for the Week 2 check-in. The link is on the DoraHacks build page.
@@ -152,17 +165,29 @@ Tabs: **Grants** (where every grant's money is: paid, in escrow or returned, wit
 
 ## Tests
 
-`test/Vestry.test.js` covers quorum release to a vesting lock, unlocked payout, the activity gate, non-reviewer and double approvals, change requests voiding approvals, reclaim before and after the deadline, released/reclaimed conflicts, configuration validation and native-asset tranches. Hardhat has no pallet-vesting, so a mock is placed at the precompile address; the real lock is proven on testnet.
+24 tests (`npx hardhat test`):
+
+- `test/Vestry.test.js` (9): quorum release to a vesting lock, unlocked payout, the activity gate, non-reviewer and double approvals, change requests voiding approvals, reclaim before and after the deadline, released/reclaimed conflicts, configuration validation, native-asset tranches.
+- `test/Vestry.security.test.js` (10): deadline edges, a grantee contract re-entering the payout, a grantee that refuses payment, exact escrow accounting, access checks, and two pinned limitations. Findings: [docs/SECURITY.md](docs/SECURITY.md).
+- `test/Portaldot.test.js` (5): the reusable precompile library.
+
+Hardhat has no pallet-vesting, so a mock sits at the precompile address; the real lock is proven on testnet.
+
+**Reproducible build.** `npx hardhat compile` rebuilds both deployed contracts byte for byte, metadata hash included, on any OS (`.gitattributes` keeps Solidity sources LF).
+
+## For other Portaldot builders
+
+`contracts/lib/Portaldot.sol` is a small MIT library with the facts we verified on PortaldotV3: the vesting precompile address, the Assets ERC-20 address layout, wei-to-planck conversion and the 10 POT minimum, plus a `vestedPay` helper. Notes on storage deposits, log ordering and vesting claims: [docs/ECOSYSTEM.md](docs/ECOSYSTEM.md).
 
 ## Status
 
 | Done | Next |
 |---|---|
-| Contract, 9 tests, testnet deployment | Test every wallet action in the web app end to end with MetaMask |
-| Full grant lifecycle on testnet, including review, change request, usage hold, release and reclaim | Asset-denominated grant on testnet |
-| Native read-back and `vest()` claim on the grantee's account | Reviewer sets backed by Portaldot multisig and on-chain identity |
-| Web app on Vercel: Grants, Review and Proof tabs reading live chain state | Pilot with a Portaldot ecosystem funder |
-| | Security review before any mainnet use |
+| Contract, 24 tests, byte-identical testnet deployment | Test the same flow with a real MetaMask |
+| Full grant lifecycle on testnet, including review, change request, usage hold, release and reclaim | Asset-denominated grant on testnet (scripts ready: `scripts/create-test-asset.mjs`, `scripts/asset-flow.js`) |
+| A grant driven through the live web app, every step a UI click (`evidence/ui-run.json`) | Reviewer sets backed by Portaldot multisig and on-chain identity |
+| Native read-back and `vest()` claim, now also a button in the app | Pilot with a Portaldot ecosystem funder |
+| Internal security review ([docs/SECURITY.md](docs/SECURITY.md)) and a reusable precompile library | External audit before any mainnet use |
 
 ## License
 
