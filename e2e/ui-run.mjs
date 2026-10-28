@@ -68,8 +68,14 @@ async function open(p) {
 
 /// Confirms a click from the chain (the receipt of the tx the wallet just sent), then checks the app said so too.
 async function waitConfirmed(p, label) {
-  const sent = steps.filter((s) => s.role === p.role && s.hash).pop();
-  if (!sent) throw new Error(`${label}: the wallet never sent a transaction`);
+  // The app estimates cost before asking the wallet to send, so poll for a hash sent after this click.
+  const since = p.clickedAt || "";
+  let sent;
+  for (let i = 0; i < 120 && !sent; i++) {
+    sent = steps.filter((s) => s.role === p.role && s.hash && s.at >= since).pop();
+    if (!sent) await new Promise((r) => setTimeout(r, 1000));
+  }
+  if (!sent) throw new Error(`${label}: the wallet sent no transaction within 2 minutes of the click`);
   const receipt = await provider.waitForTransaction(sent.hash, 1, 240000);
   if (!receipt || receipt.status !== 1) throw new Error(`${label}: tx ${sent.hash} failed on chain`);
   const ui = await p.page
@@ -117,11 +123,13 @@ try {
       await reviewer.page.getByRole("tab", { name: /Review/ }).click();
       const rc = reviewer.page.locator(`#grant-${grantId}`);
       await rc.waitFor({ timeout: 60000 });
+      reviewer.clickedAt = new Date().toISOString();
       await rc.getByRole("button", { name: "Approve" }).click();
       await waitConfirmed(reviewer, "approved and paid");
       await grantee.page.waitForTimeout(36000);
     }
     await open(grantee);
+    grantee.clickedAt = new Date().toISOString();
     await grantee.page.locator(`#grant-${grantId}`).getByRole("button", { name: "Claim vested tPOT" }).click();
     await waitConfirmed(grantee, "vested tPOT claimed");
     await open(funder);
@@ -149,6 +157,7 @@ try {
   await funder.page.getByLabel("Unlock over (blocks)").fill("300");
   await funder.page.getByLabel("Only pay once the grantee's contract shows real use").check();
   await funder.page.getByLabel("At least").fill("2");
+  funder.clickedAt = new Date().toISOString();
   await funder.page.getByRole("button", { name: /Put 10 tPOT in escrow/ }).click();
   await waitConfirmed(funder, "grant funded");
 
@@ -157,6 +166,7 @@ try {
   const card = grantee.page.locator(`#grant-${grantId}`);
   await card.waitFor({ timeout: 60000 });
   await card.getByPlaceholder("Link to the commit, demo or transaction").fill("https://github.com/nftkingiii/vestry/tree/main/e2e");
+  grantee.clickedAt = new Date().toISOString();
   await card.getByRole("button", { name: "Submit work" }).click();
   await waitConfirmed(grantee, "work submitted");
 
@@ -165,6 +175,7 @@ try {
   await reviewer.page.getByRole("tab", { name: /Review/ }).click();
   const rcard = reviewer.page.locator(`#grant-${grantId}`);
   await rcard.waitFor({ timeout: 60000 });
+  reviewer.clickedAt = new Date().toISOString();
   await rcard.getByRole("button", { name: "Approve" }).click();
   await waitConfirmed(reviewer, "approved and paid");
 
@@ -172,6 +183,7 @@ try {
   await grantee.page.waitForTimeout(36000);
   await open(grantee);
   const gcard = grantee.page.locator(`#grant-${grantId}`);
+  grantee.clickedAt = new Date().toISOString();
   await gcard.getByRole("button", { name: "Claim vested tPOT" }).click();
   await waitConfirmed(grantee, "vested tPOT claimed");
 
