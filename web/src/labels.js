@@ -22,6 +22,10 @@ export const GRANT_LABELS = {
     title: "Stablecoin grant",
     milestones: [{ title: "Integrate vUSD payouts" }],
   },
+  4: {
+    title: "Demo grant",
+    milestones: [{ title: "Reach three real users", metric: "people signed the Guestbook" }],
+  },
 };
 
 export const ADDRESS_LABELS = {
