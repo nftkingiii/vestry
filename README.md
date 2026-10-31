@@ -127,6 +127,19 @@ The testnet stalled at block 232115 while the claim was pending and resumed late
 
 ![The grantee's view: Live UI grant paid, vesting, claim in progress](evidence/ui-run/2-grantee-paid-and-claiming.png)
 
+### A grant paid in a native asset
+
+Grants are not limited to POT. On 2026-10-31 a grant was paid in **vUSD**, a test token that lives in Portaldot's native `pallet-assets` (asset ID 77170291), through its ERC-20 precompile at `0x0499867300000000000000000000000000010000`. Transactions were sent by `scripts/asset-flow.js` with testnet wallets ([evidence/asset-grant.json](evidence/asset-grant.json)).
+
+| Step | Tx | Block |
+|---|---|---|
+| Funder approves Vestry on the asset's ERC-20 precompile | `0x3d3c5254872280ec5a9ee9847df860b51d64b5f90913ea75969f48cf17a67ffd` | 262267 |
+| Funder creates the grant; 100 vUSD pulled into escrow | `0x5d70d16d2d57c19636e56dd33f5e1288bbedb031bd03c8bd1a2ab6e87bdee358` | 262269 |
+| Grantee submits work | `0x7541b92bb2ffa2c7c6446ee188d6c8939a63bc451295eda590452c088ccef9fe` | 262270 |
+| Reviewer approves; Vestry pays 100 vUSD | `0x33fda1292431ca01d22f7a20cb9755bd4cd5cde5392994e1dfcfedccb1abba1b` | 262271 |
+
+Read back after the run: the grantee holds 100 vUSD through the precompile **and** in its native `pallet-assets` account (`5EzQM2V4AhH3142ebEhsEnvvAEcp17tK67YYu9gCJTYHZbbe`), and Vestry holds 0. The asset itself was created from a native Portaldot wallet (tx `0xdc7612be892a2f19a6483f9bb80ec38681d02921358326e08ce0183550f0765c`) because `pallet-assets` needs a Substrate signature; `scripts/create-test-asset.mjs` does that step.
+
 ## Demo
 
 A 1:52 walkthrough of the live app and this testnet evidence was produced for the Week 2 check-in. The link is on the DoraHacks build page.
@@ -186,9 +199,10 @@ Hardhat has no pallet-vesting, so a mock sits at the precompile address; the rea
 | Done | Next |
 |---|---|
 | Contract, 24 tests, byte-identical testnet deployment | Test the same flow with a real MetaMask |
-| Full grant lifecycle on testnet, including review, change request, usage hold, release and reclaim | Asset-denominated grant on testnet (scripts ready: `scripts/create-test-asset.mjs`, `scripts/asset-flow.js`) |
-| A grant driven through the live web app, every step a UI click (`evidence/ui-run.json`) | Reviewer sets backed by Portaldot multisig and on-chain identity |
+| Full grant lifecycle on testnet, including review, change request, usage hold, release and reclaim | Reviewer sets backed by Portaldot multisig and on-chain identity |
+| A grant driven through the live web app, every step a UI click (`evidence/ui-run.json`) | Usage metric presets and warnings before funding |
 | Native read-back and `vest()` claim, now also a button in the app | Pilot with a Portaldot ecosystem funder |
+| A grant paid in a native `pallet-assets` token (`evidence/asset-grant.json`) | |
 | Internal security review ([docs/SECURITY.md](docs/SECURITY.md)) and a reusable precompile library | External audit before any mainnet use |
 
 ## License

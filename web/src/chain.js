@@ -234,6 +234,21 @@ export async function loadActivity() {
     .sort((a, b) => b.block - a.block || b.logIndex - a.logIndex);
 }
 
+/// Native assets a grant can be paid in (pallet-assets behind its ERC-20 precompile). Amounts on chain are in the
+/// token's own units, so a 6-decimal token must never go through formatPot.
+const TOKENS = { "0x0499867300000000000000000000000000010000": { symbol: "vUSD", decimals: 6 } };
+
+export function tokenOf(grant) {
+  if (!grant.token || grant.token === ethers.ZeroAddress) return { symbol: CHAIN.symbol, decimals: 18, native: true };
+  return TOKENS[grant.token.toLowerCase()] || { symbol: "tokens", decimals: 18 };
+}
+
+/// An amount of this grant's own currency as a plain number string, e.g. "100".
+export function formatUnits(grant, amount) {
+  if (amount === null || amount === undefined) return "—";
+  return Number(ethers.formatUnits(amount, tokenOf(grant).decimals)).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
 export function formatPot(wei, digits = 2) {
   if (wei === null || wei === undefined) return "—";
   return Number(ethers.formatEther(wei)).toLocaleString(undefined, { maximumFractionDigits: digits });

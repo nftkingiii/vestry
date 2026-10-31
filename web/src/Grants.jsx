@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { GUESTBOOK, MIN_VESTED, VESTING_ABI, VESTING_PRECOMPILE, VESTRY, VESTRY_ABI, WEI_PER_PLANCK, formatPot, short } from "./chain.js";
+import { GUESTBOOK, MIN_VESTED, VESTING_ABI, VESTING_PRECOMPILE, VESTRY, VESTRY_ABI, WEI_PER_PLANCK, formatUnits, short, tokenOf } from "./chain.js";
 import { grantTitle, nameOf } from "./labels.js";
 import { split } from "./status.js";
 import { MilestoneRow } from "./Milestone.jsx";
@@ -34,18 +34,18 @@ export function GrantCard({ grant, wallet, nowSec, head, onChange }) {
           </div>
         </div>
         <div className="grant-amount tabular">
-          {formatPot(grant.total)} <span>tPOT</span>
+          {formatUnits(grant, grant.total)} <span>{tokenOf(grant).symbol}</span>
         </div>
       </div>
-      <div className="bar" role="img" aria-label={`${formatPot(s.paid)} paid, ${formatPot(s.escrow)} in escrow, ${formatPot(s.returned)} returned`}>
+      <div className="bar" role="img" aria-label={`${formatUnits(grant, s.paid)} paid, ${formatUnits(grant, s.escrow)} in escrow, ${formatUnits(grant, s.returned)} returned`}>
         <i className="bar-paid" style={{ width: `${pct(s.paid)}%` }} />
         <i className="bar-escrow" style={{ width: `${pct(s.escrow)}%` }} />
         <i className="bar-back" style={{ width: `${pct(s.returned)}%` }} />
       </div>
       <div className="legend tabular">
-        <span><i className="key key-paid" /><b>{formatPot(s.paid)}</b> paid</span>
-        <span><i className="key key-escrow" /><b>{formatPot(s.escrow)}</b> in escrow</span>
-        <span><i className="key key-back" /><b>{formatPot(s.returned)}</b> returned</span>
+        <span><i className="key key-paid" /><b>{formatUnits(grant, s.paid)}</b> paid</span>
+        <span><i className="key key-escrow" /><b>{formatUnits(grant, s.escrow)}</b> in escrow</span>
+        <span><i className="key key-back" /><b>{formatUnits(grant, s.returned)}</b> returned</span>
         <span className="legend-meta">
           {grant.reviewers.length === 1 && grant.threshold === 1
             ? "1 reviewer must approve"

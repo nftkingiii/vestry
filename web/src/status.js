@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { formatPot } from "./chain.js";
+import { formatUnits, tokenOf } from "./chain.js";
 import { milestoneLabel, nameOf } from "./labels.js";
 
 const BLOCK_SECONDS = 6;
@@ -23,8 +23,9 @@ export function split(grant) {
   return { paid, returned, escrow: grant.total - paid - returned };
 }
 
+/// Totals across native POT grants. Grants in other tokens stay on their own cards: units don't add up.
 export function totals(grants) {
-  return grants.reduce(
+  return grants.filter((g) => tokenOf(g).native).reduce(
     (t, g) => {
       const s = split(g);
       return { paid: t.paid + s.paid, escrow: t.escrow + s.escrow, returned: t.returned + s.returned };
@@ -48,7 +49,7 @@ export function describe(grant, m, nowSec) {
   const expired = nowSec > m.deadline;
   const due = expired ? null : duration(m.deadline - nowSec);
   const need = grant.threshold - m.approvals;
-  const amount = `${formatPot(m.amount)} tPOT`;
+  const amount = `${formatUnits(grant, m.amount)} ${tokenOf(grant).symbol}`;
   const reviewers = grant.threshold === 1 ? "the reviewer" : grant.threshold === 2 ? "both reviewers" : `${grant.threshold} reviewers`;
 
   if (m.state === "Released") {

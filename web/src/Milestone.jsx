@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ethers } from "ethers";
-import { VESTRY, VESTRY_ABI, formatPot } from "./chain.js";
+import { VESTRY, VESTRY_ABI, formatUnits, tokenOf } from "./chain.js";
 import { milestoneLabel } from "./labels.js";
 import { describe, duration, steps, unlock } from "./status.js";
 import { TxStatus, useTx } from "./ui.jsx";
@@ -98,14 +98,14 @@ export function MilestoneActions({ grant, m, wallet, nowSec, onChange }) {
   if (m.state === "Submitted" && m.approvals >= grant.threshold && metricOk && !expired) {
     actions.push(
       <button key="release" className="btn btn-primary" disabled={busy} onClick={() => call("release", [grant.id, m.index])}>
-        Pay {formatPot(m.amount)} tPOT
+        Pay {formatUnits(grant, m.amount)} {tokenOf(grant).symbol}
       </button>
     );
   }
   if (isFunder && expired && (m.state === "Open" || m.state === "Submitted")) {
     actions.push(
       <button key="reclaim" className="btn btn-primary" disabled={busy} onClick={() => call("reclaim", [grant.id, m.index])}>
-        Take back {formatPot(m.amount)} tPOT
+        Take back {formatUnits(grant, m.amount)} {tokenOf(grant).symbol}
       </button>
     );
   }

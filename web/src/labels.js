@@ -18,6 +18,10 @@ export const GRANT_LABELS = {
     title: "Live UI grant",
     milestones: [{ title: "Ship with two real users", metric: "people signed the Guestbook" }],
   },
+  3: {
+    title: "Stablecoin grant",
+    milestones: [{ title: "Integrate vUSD payouts" }],
+  },
 };
 
 export const ADDRESS_LABELS = {

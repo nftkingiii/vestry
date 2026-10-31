@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CHAIN, formatPot, loadGrants, mappedSs58, short } from "./chain.js";
+import { CHAIN, formatPot, formatUnits, loadGrants, mappedSs58, short, tokenOf } from "./chain.js";
 import { grantTitle, milestoneLabel, nameOf } from "./labels.js";
 import { todos, totals } from "./status.js";
 import { useWallet } from "./wallet.js";
@@ -48,7 +48,7 @@ function WalletStep({ wallet }) {
 const TODO_TEXT = {
   review: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} is waiting for your approval.`,
   submit: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} is waiting for you to submit your work.`,
-  reclaim: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} passed its deadline unpaid. You can take the ${formatPot(t.m.amount)} tPOT back.`,
+  reclaim: (t) => `${milestoneLabel(t.grant.id, t.m.index).title} passed its deadline unpaid. You can take the ${formatUnits(t.grant, t.m.amount)} ${tokenOf(t.grant).symbol} back.`,
 };
 
 function NeedsYou({ items, onGo }) {
