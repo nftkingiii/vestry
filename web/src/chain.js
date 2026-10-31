@@ -175,46 +175,50 @@ export async function loadGrants() {
   const chronological = events.slice().reverse();
   const created = new Map(chronological.filter((e) => e.name === "GrantCreated").map((e) => [Number(e.args.grantId), e]));
   const history = historyFromEvents(chronological);
-  const grants = [];
-  for (let id = 0; id < Number(count); id++) {
-    const g = await vestryRead.grants(id);
-    const milestones = [];
-    for (let i = 0; i < Number(g.milestoneCount); i++) {
-      const m = await vestryRead.getMilestone(id, i);
-      let metricValue = null;
-      if (m.metricTarget !== ethers.ZeroAddress) {
-        metricValue = await vestryRead.readMetric(m.metricTarget, m.metricSelector).catch(() => null);
-      }
-      milestones.push({
-        index: i,
-        amount: m.amount,
-        deadline: Number(m.deadline),
-        vestingBlocks: Number(m.vestingBlocks),
-        approvals: Number(m.approvals),
-        round: Number(m.round),
-        state: STATES[Number(m.state)],
-        metricTarget: m.metricTarget,
-        metricSelector: m.metricSelector,
-        metricMin: Number(m.metricMin),
-        metricValue: metricValue === null ? null : Number(metricValue),
-        ...history(id, i),
-      });
-    }
-    const log = created.get(id);
-    grants.push({
-      id,
-      funder: g.funder,
-      grantee: g.grantee,
-      token: g.token,
-      threshold: Number(g.threshold),
-      reviewers: log ? [...log.args.reviewers] : [],
-      total: log ? log.args.total : milestones.reduce((s, m) => s + m.amount, 0n),
-      createdTx: log?.tx,
-      createdBlock: log?.block,
-      vestingLock: await vestingRead.vestingBalanceOf(g.grantee).catch(() => null),
-      milestones,
-    });
-  }
+  // Read everything in parallel: one after another took about 20 s on the public RPC and grew with every grant.
+  const grants = await Promise.all(
+    Array.from({ length: Number(count) }, async (_, id) => {
+      const g = await vestryRead.grants(id);
+      const [milestones, vestingLock] = await Promise.all([
+        Promise.all(
+          Array.from({ length: Number(g.milestoneCount) }, async (_, i) => {
+            const m = await vestryRead.getMilestone(id, i);
+            const metricValue =
+              m.metricTarget === ethers.ZeroAddress ? null : await vestryRead.readMetric(m.metricTarget, m.metricSelector).catch(() => null);
+            return {
+              index: i,
+              amount: m.amount,
+              deadline: Number(m.deadline),
+              vestingBlocks: Number(m.vestingBlocks),
+              approvals: Number(m.approvals),
+              round: Number(m.round),
+              state: STATES[Number(m.state)],
+              metricTarget: m.metricTarget,
+              metricSelector: m.metricSelector,
+              metricMin: Number(m.metricMin),
+              metricValue: metricValue === null ? null : Number(metricValue),
+              ...history(id, i),
+            };
+          })
+        ),
+        vestingRead.vestingBalanceOf(g.grantee).catch(() => null),
+      ]);
+      const log = created.get(id);
+      return {
+        id,
+        funder: g.funder,
+        grantee: g.grantee,
+        token: g.token,
+        threshold: Number(g.threshold),
+        reviewers: log ? [...log.args.reviewers] : [],
+        total: log ? log.args.total : milestones.reduce((s, m) => s + m.amount, 0n),
+        createdTx: log?.tx,
+        createdBlock: log?.block,
+        vestingLock,
+        milestones,
+      };
+    })
+  );
   return { grants, head };
 }
 
