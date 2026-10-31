@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 const [phraseFile, expected] = process.argv.slice(2);
 if (!phraseFile || !expected) throw new Error("usage: node create-test-asset.mjs <recovery-phrase-file> <expected-ss58-address>");
 
-const ASSET_ID = 20261028;                 // unused id, checked below
+const ASSET_ID = 77170291;                 // unused id, checked below
 const DEPLOYER = "5CWsA8QwM1NBtaXeSggPP8cbLUmkj23HGf886723toVKMPmR"; // native account of 0x13f3…9ddb
 const DECIMALS = 6;
 const MINT = 1000n * 10n ** BigInt(DECIMALS); // 1,000 vUSD

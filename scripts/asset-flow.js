@@ -1,12 +1,12 @@
 // A grant paid in a native pallet-assets token through its ERC-20 precompile, on PortaldotV3 testnet.
-// Needs scripts/create-test-asset.mjs to have created asset 20261028 (vUSD) and minted it to the deployer.
+// Needs scripts/create-test-asset.mjs to have created asset 77170291 (vUSD) and minted it to the deployer.
 // Usage: npx hardhat run scripts/asset-flow.js --network portaldot
 const fs = require("fs");
 const path = require("path");
 const { ethers } = require("hardhat");
 const { execFileSync } = require("child_process");
 
-const ASSET_ID = 20261028;
+const ASSET_ID = 77170291;
 const AMOUNT = 100n * 10n ** 6n; // 100 vUSD (6 decimals)
 const NO_METRIC = { metricTarget: ethers.ZeroAddress, metricSelector: "0x00000000", metricMin: 0 };
 // Same layout as contracts/lib/Portaldot.sol assetToken(): id in bytes 0-3, 0x0001 in bytes 16-17.
