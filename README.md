@@ -142,7 +142,18 @@ Read back after the run: the grantee holds 100 vUSD through the precompile **and
 
 ## Demo
 
-A 1:52 walkthrough of the live app and this testnet evidence was produced for the Week 2 check-in. The link is on the DoraHacks build page.
+A 1:58 narrated walkthrough follows one grant through the live app on PortaldotV3. It was recorded in Chromium with injected test wallets holding testnet burner keys, not MetaMask. The third Guestbook signature and the wallet top-ups were scripts, because the Guestbook has no UI. The full run is in [evidence/demo-run.json](evidence/demo-run.json).
+
+| Step | Tx hash | Block |
+|---|---|---|
+| Funder creates grant 4; 10 tPOT goes into escrow | `0xb3f685fcf9f603b2c67aed683b6ffea0227ee9c6a85a094245bbe347f544d2ea` | 262537 |
+| Grantee submits work | `0x729793879beb8b7801d6e83e0a38be62149ce5512ab4e1f2c92db138e1c7d2e6` | 262540 |
+| Reviewer approves; held at 2 of 3 users | `0x9ca8c935e11adce97b66d1a050d984f0ebf69dbee9e083844af7c506478fa779` | 262543 |
+| Third user signs the Guestbook (script) | `0xbd349fa938b34ecb587da7a7e5bb6d7865d9c355b90e75fdda8793a5575eb65d` | 262546 |
+| Payment released as a vesting lock | `0xd1ad5498242c997623cdc2932bc91087c2a5028237512a196679a55517b53175` | 262548 |
+| Grantee claims the vested tPOT | `0xcf5996008bd135a0cc35a358755b685b5190523a087a8e20bf3c6e43a6b24fd3` | 262557 |
+
+A shorter 1:52 walkthrough was produced for the Week 2 check-in. Its link is on the DoraHacks build page.
 
 Pitch deck (PDF): [docs/vestry-deck.pdf](docs/vestry-deck.pdf)
 

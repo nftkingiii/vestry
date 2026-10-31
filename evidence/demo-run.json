@@ -1,0 +1,73 @@
+{
+  "what": "A grant recorded for the demo: each step clicked in the live web app in Chromium with an injected EIP-1193 test wallet (not MetaMask) holding a testnet burner key. Guestbook signing and wallet top-ups were scripts.",
+  "app": "https://vestry-grants.vercel.app",
+  "network": "PortaldotV3 testnet",
+  "chainId": 420420777,
+  "grantId": 4,
+  "steps": [
+    {
+      "role": "system",
+      "label": "recording grant id 4",
+      "at": "2026-10-31T05:12:28.971Z"
+    },
+    {
+      "role": "setup",
+      "label": "script top-up of 0x8408bc… to 16 tPOT",
+      "at": "2026-10-31T05:12:40.714Z",
+      "hash": "0x680b9cb64799ffaa9e12705c16ffa4df2e5798767ca0a61d662354d5be5a4c5b"
+    },
+    {
+      "role": "setup",
+      "label": "script top-up of 0xD45e54… to 10 tPOT",
+      "at": "2026-10-31T05:12:42.315Z",
+      "hash": "0x9031d26a11794bd248dd16ff16b56afa01e3ad16e767c7bdfcaa6a2846ccb696"
+    },
+    {
+      "role": "funder",
+      "label": "grant funded",
+      "at": "2026-10-31T05:13:09.778Z",
+      "hash": "0xb3f685fcf9f603b2c67aed683b6ffea0227ee9c6a85a094245bbe347f544d2ea",
+      "block": 262537,
+      "status": 1
+    },
+    {
+      "role": "grantee",
+      "label": "work submitted",
+      "at": "2026-10-31T05:13:30.126Z",
+      "hash": "0x729793879beb8b7801d6e83e0a38be62149ce5512ab4e1f2c92db138e1c7d2e6",
+      "block": 262540,
+      "status": 1
+    },
+    {
+      "role": "reviewer",
+      "label": "approved, held at 2 of 3 users",
+      "at": "2026-10-31T05:13:43.377Z",
+      "hash": "0x9ca8c935e11adce97b66d1a050d984f0ebf69dbee9e083844af7c506478fa779",
+      "block": 262543,
+      "status": 1
+    },
+    {
+      "role": "third-user",
+      "label": "signed the grantee's Guestbook (script: the Guestbook has no UI)",
+      "at": "2026-10-31T05:14:09.802Z",
+      "hash": "0xbd349fa938b34ecb587da7a7e5bb6d7865d9c355b90e75fdda8793a5575eb65d",
+      "block": 262546
+    },
+    {
+      "role": "reviewer",
+      "label": "released as a vesting lock",
+      "at": "2026-10-31T05:14:17.227Z",
+      "hash": "0xd1ad5498242c997623cdc2932bc91087c2a5028237512a196679a55517b53175",
+      "block": 262548,
+      "status": 1
+    },
+    {
+      "role": "grantee",
+      "label": "vested tPOT claimed",
+      "at": "2026-10-31T05:15:11.687Z",
+      "hash": "0xcf5996008bd135a0cc35a358755b685b5190523a087a8e20bf3c6e43a6b24fd3",
+      "block": 262557,
+      "status": 1
+    }
+  ]
+}
