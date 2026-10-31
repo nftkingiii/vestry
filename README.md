@@ -121,7 +121,9 @@ On 2026-10-28 `e2e/ui-run.mjs` opened https://vestry-grants.vercel.app in Chromi
 | Funder: **Put 10 tPOT in escrow** (usage gate: 2 Guestbook users) | `0x19e8c2ab4b8261905d28545dcf9b7e307cc73c3426007eb42240ebde2a1b53ae` | 231736 |
 | Grantee: **Submit work** | `0x14e7a49fe86660b1744878a4a90f86ef9109c6b6241ee918f0dc8200ef60cf08` | 231738 |
 | Reviewer: **Approve** on the Review tab; usage gate read, paid as a vesting lock | `0x8ef8e577e1b527d22870ca59637d0da0025f883785b02ff4584366ab13116dd1` | 232065 |
-| Grantee: **Claim vested tPOT** | sent, not included: the testnet stopped producing blocks at #232115 (12:45 UTC); to retry when it resumes | – |
+| Grantee: **Claim vested tPOT** (`vest()` on the precompile) | `0x79b07af19204b5d60ff15f96b43b94a58206ac5b8b726778ba49b3eb94b9847a` | 232117 |
+
+The testnet stalled at block 232115 while the claim was pending and resumed later, and the claim was included then. The grantee's spendable balance rose from 22.96 to 24.69 tPOT, matching 52 of 300 blocks vested.
 
 ![The grantee's view: Live UI grant paid, vesting, claim in progress](evidence/ui-run/2-grantee-paid-and-claiming.png)
 
